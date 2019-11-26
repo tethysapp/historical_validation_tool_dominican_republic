@@ -43,7 +43,7 @@ def get_discharge_data(request):
         codEstacion = get_data['stationcode']
         nomEstacion = get_data['stationname']
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(codEstacion)
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(codEstacion)
 
         r = requests.get(url)
         c = xmltodict.parse(r.content)
@@ -182,7 +182,7 @@ def get_hydrographs(request):
 
         simulated_df = pd.DataFrame(data=era_values, index=era_dates, columns=['Simulated Streamflow'])
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
@@ -266,7 +266,7 @@ def get_dailyAverages(request):
 
         simulated_df = pd.DataFrame(data=era_values, index=era_dates, columns=['Simulated Streamflow'])
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
@@ -352,7 +352,7 @@ def get_monthlyAverages(request):
 
         simulated_df = pd.DataFrame(data=era_values, index=era_dates, columns=['Simulated Streamflow'])
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
@@ -437,7 +437,7 @@ def get_scatterPlot(request):
 
         simulated_df = pd.DataFrame(data=era_values, index=era_dates, columns=['Simulated Streamflow'])
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
@@ -542,7 +542,7 @@ def get_scatterPlotLogScale(request):
 
         simulated_df = pd.DataFrame(data=era_values, index=era_dates, columns=['Simulated Streamflow'])
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
@@ -637,7 +637,7 @@ def get_volumeAnalysis(request):
 
         simulated_df = pd.DataFrame(data=era_values, index=era_dates, columns=['Simulated Streamflow'])
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
@@ -737,7 +737,7 @@ def volume_table_ajax(request):
 
         simulated_df = pd.DataFrame(data=era_values, index=era_dates, columns=['Simulated Streamflow'])
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
@@ -878,7 +878,7 @@ def make_table_ajax(request):
 
         simulated_df = pd.DataFrame(data=era_values, index=era_dates, columns=['Simulated Streamflow'])
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
@@ -940,7 +940,7 @@ def get_observed_discharge_csv(request):
         codEstacion = get_data['stationcode']
         nomEstacion = get_data['stationname']
 
-        url = 'http://worldwater.byu.edu/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
+        url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
         r = requests.get(url)
