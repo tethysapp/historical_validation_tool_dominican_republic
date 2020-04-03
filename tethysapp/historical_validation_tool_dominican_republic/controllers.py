@@ -45,7 +45,7 @@ def get_discharge_data(request):
 
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -185,7 +185,7 @@ def get_hydrographs(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -269,7 +269,7 @@ def get_dailyAverages(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -355,7 +355,7 @@ def get_monthlyAverages(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -440,7 +440,7 @@ def get_scatterPlot(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -545,7 +545,7 @@ def get_scatterPlotLogScale(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -640,7 +640,7 @@ def get_volumeAnalysis(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -740,7 +740,7 @@ def volume_table_ajax(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -881,7 +881,7 @@ def make_table_ajax(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
@@ -943,7 +943,7 @@ def get_observed_discharge_csv(request):
         url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
             codEstacion)
 
-        r = requests.get(url)
+        r = requests.get(url, verify=False)
         c = xmltodict.parse(r.content)
 
         y = []
