@@ -253,6 +253,7 @@ def get_simulated_bc_data(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -445,6 +446,7 @@ def get_hydrographs(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -641,6 +643,7 @@ def get_dailyAverages(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -841,6 +844,7 @@ def get_monthlyAverages(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -1041,6 +1045,7 @@ def get_scatterPlot(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -1281,6 +1286,7 @@ def get_scatterPlotLogScale(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -1496,6 +1502,7 @@ def get_volumeAnalysis(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -1716,6 +1723,7 @@ def volume_table_ajax(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -1970,6 +1978,7 @@ def make_table_ajax(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -2248,6 +2257,7 @@ def make_table_ajax2(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -2749,6 +2759,7 @@ def get_time_series_bc(request):
         monData = simulated_df[simulated_df.index.month.isin([monIdx])]
         # filter the observations to current month
         monObs = observed_df[observed_df.index.month.isin([monIdx])]
+        monObs = monObs.dropna()
 
         # get maximum value to bound histogram
         obs_tempMax = np.max(monObs.max())
@@ -3149,6 +3160,7 @@ def get_simulated_bc_discharge_csv(request):
                 monData = simulated_df[simulated_df.index.month.isin([monIdx])]
                 # filter the observations to current month
                 monObs = observed_df[observed_df.index.month.isin([monIdx])]
+                monObs = monObs.dropna()
 
                 # get maximum value to bound histogram
                 obs_tempMax = np.max(monObs.max())
@@ -3450,6 +3462,7 @@ def get_forecast_bc_data_csv(request):
         monData = simulated_df[simulated_df.index.month.isin([monIdx])]
         # filter the observations to current month
         monObs = observed_df[observed_df.index.month.isin([monIdx])]
+        monObs = monObs.dropna()
 
         # get maximum value to bound histogram
         obs_tempMax = np.max(monObs.max())
