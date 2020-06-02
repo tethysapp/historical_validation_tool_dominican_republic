@@ -49,6 +49,8 @@ def get_discharge_data(request):
 
 	try:
 
+		'''Get Observed Data'''
+
 		codEstacion = get_data['stationcode']
 		nomEstacion = get_data['stationname']
 
@@ -122,8 +124,7 @@ def get_simulated_data(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		# ----------------------------------------------
 		# Chart Section
@@ -178,8 +179,7 @@ def get_simulated_bc_data(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -209,101 +209,7 @@ def get_simulated_bc_data(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		# ----------------------------------------------
 		# Chart Section
@@ -311,8 +217,8 @@ def get_simulated_bc_data(request):
 
 		corrected_Q = go.Scatter(
 			name='Corrected Simulated Discharge',
-			x=dates,
-			y=values,
+			x=corrected_df.index,
+			y=corrected_df.iloc[:,0].values,
 			line=dict(color='#00cc96')
 		)
 
@@ -359,8 +265,7 @@ def get_hydrographs(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -390,101 +295,7 @@ def get_hydrographs(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -494,11 +305,14 @@ def get_hydrographs(request):
 
 		'''Plotting Data'''
 
-		observed_Q = go.Scatter(x=merged_df.index, y=merged_df.iloc[:, 1].values, name='Observed', )
+		#observed_Q = go.Scatter(x=merged_df.index, y=merged_df.iloc[:, 1].values, name='Observed', )
+		observed_Q = go.Scatter(x=observed_df.index, y=observed_df.iloc[:, 0].values, name='Observed', )
 
-		simulated_Q = go.Scatter(x=merged_df.index, y=merged_df.iloc[:, 0].values, name='Simulated', )
+		#simulated_Q = go.Scatter(x=merged_df.index, y=merged_df.iloc[:, 0].values, name='Simulated', )
+		simulated_Q = go.Scatter(x=simulated_df.index, y=simulated_df.iloc[:, 0].values, name='Simulated', )
 
-		corrected_Q = go.Scatter(x=merged_df2.index, y=merged_df2.iloc[:, 0].values, name='Corrected Simulated', )
+		#corrected_Q = go.Scatter(x=merged_df2.index, y=merged_df2.iloc[:, 0].values, name='Corrected Simulated', )
+		corrected_Q = go.Scatter(x=corrected_df.index, y=corrected_df.iloc[:, 0].values, name='Corrected Simulated', )
 
 		layout = go.Layout(
 			title='Observed & Simulated Streamflow at <br> {0} - {1}'.format(codEstacion, nomEstacion),
@@ -543,8 +357,7 @@ def get_dailyAverages(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -574,101 +387,7 @@ def get_dailyAverages(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -732,8 +451,7 @@ def get_monthlyAverages(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -763,101 +481,7 @@ def get_monthlyAverages(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -922,8 +546,7 @@ def get_scatterPlot(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -953,101 +576,7 @@ def get_scatterPlot(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -1152,8 +681,7 @@ def get_scatterPlotLogScale(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -1183,101 +711,7 @@ def get_scatterPlotLogScale(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -1356,8 +790,7 @@ def get_volumeAnalysis(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -1387,101 +820,7 @@ def get_volumeAnalysis(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -1565,8 +904,7 @@ def volume_table_ajax(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -1596,101 +934,7 @@ def volume_table_ajax(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -1807,8 +1051,7 @@ def make_table_ajax(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -1838,101 +1081,7 @@ def make_table_ajax(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -1980,273 +1129,20 @@ def make_table_ajax(request):
 		table_html2 = table.transpose()
 		table_html2 = table_html2.to_html(classes="table table-hover table-striped").replace('border="1"', 'border="0"')
 
-		return HttpResponse(table_html)
-
-	except Exception:
-		traceback.print_exc()
-		return JsonResponse({'error': 'No data found for the selected station.'})
-
-
-def make_table_ajax2(request):
-	get_data = request.GET
-
-	try:
-		watershed = get_data['watershed']
-		subbasin = get_data['subbasin']
-		comid = get_data['streamcomid']
-		codEstacion = get_data['stationcode']
-		nomEstacion = get_data['stationname']
-
-		# Indexing the metrics to get the abbreviations
-		selected_metric_abbr = get_data.getlist("metrics[]", None)
-
-		# print(selected_metric_abbr)
-
-		# Retrive additional parameters if they exist
-		# Retrieving the extra optional parameters
-		extra_param_dict = {}
-
-		if request.GET.get('mase_m', None) is not None:
-			mase_m = float(request.GET.get('mase_m', None))
-			extra_param_dict['mase_m'] = mase_m
-		else:
-			mase_m = 1
-			extra_param_dict['mase_m'] = mase_m
-
-		if request.GET.get('dmod_j', None) is not None:
-			dmod_j = float(request.GET.get('dmod_j', None))
-			extra_param_dict['dmod_j'] = dmod_j
-		else:
-			dmod_j = 1
-			extra_param_dict['dmod_j'] = dmod_j
-
-		if request.GET.get('nse_mod_j', None) is not None:
-			nse_mod_j = float(request.GET.get('nse_mod_j', None))
-			extra_param_dict['nse_mod_j'] = nse_mod_j
-		else:
-			nse_mod_j = 1
-			extra_param_dict['nse_mod_j'] = nse_mod_j
-
-		if request.GET.get('h6_k_MHE', None) is not None:
-			h6_mhe_k = float(request.GET.get('h6_k_MHE', None))
-			extra_param_dict['h6_mhe_k'] = h6_mhe_k
-		else:
-			h6_mhe_k = 1
-			extra_param_dict['h6_mhe_k'] = h6_mhe_k
-
-		if request.GET.get('h6_k_AHE', None) is not None:
-			h6_ahe_k = float(request.GET.get('h6_k_AHE', None))
-			extra_param_dict['h6_ahe_k'] = h6_ahe_k
-		else:
-			h6_ahe_k = 1
-			extra_param_dict['h6_ahe_k'] = h6_ahe_k
-
-		if request.GET.get('h6_k_RMSHE', None) is not None:
-			h6_rmshe_k = float(request.GET.get('h6_k_RMSHE', None))
-			extra_param_dict['h6_rmshe_k'] = h6_rmshe_k
-		else:
-			h6_rmshe_k = 1
-			extra_param_dict['h6_rmshe_k'] = h6_rmshe_k
-
-		if float(request.GET.get('lm_x_bar', None)) != 1:
-			lm_x_bar_p = float(request.GET.get('lm_x_bar', None))
-			extra_param_dict['lm_x_bar_p'] = lm_x_bar_p
-		else:
-			lm_x_bar_p = None
-			extra_param_dict['lm_x_bar_p'] = lm_x_bar_p
-
-		if float(request.GET.get('d1_p_x_bar', None)) != 1:
-			d1_p_x_bar_p = float(request.GET.get('d1_p_x_bar', None))
-			extra_param_dict['d1_p_x_bar_p'] = d1_p_x_bar_p
-		else:
-			d1_p_x_bar_p = None
-			extra_param_dict['d1_p_x_bar_p'] = d1_p_x_bar_p
-
-		'''Get Simulated Data'''
-
-		simulated_df = geoglows.streamflow.historic_simulation(comid, forcing='era_5', return_format='csv')
-
-		# Removing Negative Values
-		simulated_df[simulated_df < 0] = 0
-
-		simulated_df.index = simulated_df.index.to_series().dt.strftime("%Y-%m-%d")
-
-		simulated_df.index = pd.to_datetime(simulated_df.index)
-
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
-
-		'''Get Observed Data'''
-
-		url = 'http://128.187.106.131/app/index.php/dr/services/cuahsi_1_1.asmx/GetValuesObject?location={0}&variable=Q&startDate=1900-01-01&endDate=2019-12-31&version=1.1'.format(
-			codEstacion)
-
-		r = requests.get(url, verify=False)
-		c = xmltodict.parse(r.content)
-
-		y = []
-		x = []
-
-		for i in c['timeSeriesResponse']['timeSeries']['values']['value']:
-			y.append(float((i['#text'])))
-			x.append(dt.datetime.strptime((i['@dateTime']), "%Y-%m-%dT%H:%M:%S"))
-
-		df = pd.DataFrame(data=y, index=x, columns=['Streamflow'])
-		df.head()
-
-		datesDischarge = df.index.tolist()
-		dataDischarge = df.iloc[:, 0].values
-
-		if isinstance(dataDischarge[0], str):
-			dataDischarge = map(float, dataDischarge)
-
-		observed_df = pd.DataFrame(data=dataDischarge, index=datesDischarge, columns=['Observed Streamflow'])
-
-		'''Correct the Bias in Sumulation'''
-
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
-
-		'''Merge Data'''
-
-		merged_df = hd.merge_data(sim_df=simulated_df, obs_df=observed_df)
-
-		merged_df2 = hd.merge_data(sim_df=corrected_df, obs_df=observed_df)
-
-		'''Plotting Data'''
-
-		# Creating the Table Based on User Input
-		table = hs.make_table(
-			merged_dataframe=merged_df,
-			metrics=selected_metric_abbr,
-			# remove_neg=remove_neg,
-			# remove_zero=remove_zero,
-			mase_m=extra_param_dict['mase_m'],
-			dmod_j=extra_param_dict['dmod_j'],
-			nse_mod_j=extra_param_dict['nse_mod_j'],
-			h6_mhe_k=extra_param_dict['h6_mhe_k'],
-			h6_ahe_k=extra_param_dict['h6_ahe_k'],
-			h6_rmshe_k=extra_param_dict['h6_rmshe_k'],
-			d1_p_obs_bar_p=extra_param_dict['d1_p_x_bar_p'],
-			lm_x_obs_bar_p=extra_param_dict['lm_x_bar_p'],
-			# seasonal_periods=all_date_range_list
-		)
-		table_html = table.transpose()
-		table_html = table_html.to_html(classes="table table-hover table-striped").replace('border="1"', 'border="0"')
-
-		# Creating the Table Based on User Input
-		table2 = hs.make_table(
-			merged_dataframe=merged_df2,
-			metrics=selected_metric_abbr,
-			# remove_neg=remove_neg,
-			# remove_zero=remove_zero,
-			mase_m=extra_param_dict['mase_m'],
-			dmod_j=extra_param_dict['dmod_j'],
-			nse_mod_j=extra_param_dict['nse_mod_j'],
-			h6_mhe_k=extra_param_dict['h6_mhe_k'],
-			h6_ahe_k=extra_param_dict['h6_ahe_k'],
-			h6_rmshe_k=extra_param_dict['h6_rmshe_k'],
-			d1_p_obs_bar_p=extra_param_dict['d1_p_x_bar_p'],
-			lm_x_obs_bar_p=extra_param_dict['lm_x_bar_p'],
-			# seasonal_periods=all_date_range_list
-		)
+		table2 = table2.rename(index={'Full Time Series': 'Corrected Full Time Series'})
+		table = table.rename(index={'Full Time Series': 'Original Full Time Series'})
 		table_html2 = table2.transpose()
-		table_html2 = table_html2.to_html(classes="table table-hover table-striped").replace('border="1"', 'border="0"')
+		table_html1 = table.transpose()
 
-		return HttpResponse(table_html2)
+		table_final = pd.merge(table_html1, table_html2, right_index=True, left_index=True)
+
+		table_html2 = table_html2.to_html(classes="table table-hover table-striped", table_id="corrected_1").replace(
+			'border="1"', 'border="0"')
+
+		table_final_html = table_final.to_html(classes="table table-hover table-striped",
+		                                       table_id="corrected_1").replace('border="1"', 'border="0"')
+
+		return HttpResponse(table_final_html)
 
 	except Exception:
 		traceback.print_exc()
@@ -2307,135 +1203,15 @@ def get_time_series(request):
 		units = 'metric'
 
 		'''Get Forecasts'''
-
 		forecast_df = geoglows.streamflow.forecast_stats(comid, return_format='csv')
-
 		# Removing Negative Values
 		forecast_df[forecast_df < 0] = 0
-
-		# Format dates
-		forecast_df.index = forecast_df.index.to_series().dt.strftime("%Y-%m-%d %H:%M:%S")
-		forecast_df.index = pd.to_datetime(forecast_df.index)
-
-		# Getting low resolution forecats
-		forecast_low_res = forecast_df.copy()
-		forecast_low_res.drop(['high_res (m^3/s)'], axis=1, inplace=True)
-		forecast_low_res = forecast_low_res.dropna()
-
-		# Getting high resolution forecats
-		forecast_high_res = forecast_df.copy()
-		forecast_high_res.drop(
-			['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)',
-			 'max (m^3/s)'], axis=1, inplace=True)
-		forecast_high_res = forecast_high_res.dropna()
-
 		# Getting forecast record
 		forecast_record = geoglows.streamflow.forecast_records(comid, return_format='csv')
+		forecast_ensembles = geoglows.streamflow.forecast_ensembles(comid)
+		hydroviewer_figure = geoglows.plots.hydroviewer_plot(forecast_record, forecast_df, forecast_ensembles)
 
-		# ----------------------------------------------
-		# Chart Section
-		# ----------------------------------------------
-
-		old_series = go.Scatter(
-			name='Forecast Record',
-			x=forecast_record.index,
-			y=forecast_record.iloc[:, 0].values,
-			line=dict(
-				color='red',
-			)
-		)
-
-		avg_series = go.Scatter(
-			name='Mean',
-			x=forecast_low_res.index,
-			y=forecast_low_res.iloc[:, 0].values,
-			line=dict(
-				color='blue',
-			)
-		)
-
-		max_series = go.Scatter(
-			name='Max',
-			x=forecast_low_res.index,
-			y=forecast_low_res.iloc[:, 4].values,
-			fill='tonexty',
-			mode='lines',
-			line=dict(
-				color='rgb(152, 251, 152)',
-				width=0,
-			)
-		)
-
-		min_series = go.Scatter(
-			name='Min',
-			x=forecast_low_res.index,
-			y=forecast_low_res.iloc[:, 3].values,
-			fill=None,
-			mode='lines',
-			line=dict(
-				color='rgb(152, 251, 152)',
-			)
-		)
-
-		std_dev_lower_series = go.Scatter(
-			name='Std. Dev. Lower',
-			x=forecast_low_res.index,
-			y=forecast_low_res.iloc[:, 2].values,
-			fill='tonexty',
-			mode='lines',
-			line=dict(
-				color='rgb(152, 251, 152)',
-				width=0,
-			)
-		)
-
-		std_dev_upper_series = go.Scatter(
-			name='Std. Dev. Upper',
-			x=forecast_low_res.index,
-			y=forecast_low_res.iloc[:, 1].values,
-			fill='tonexty',
-			mode='lines',
-			line=dict(
-				width=0,
-				color='rgb(34, 139, 34)',
-			)
-		)
-
-		hres_series = go.Scatter(
-			name='HRES',
-			x=forecast_high_res.index,
-			y=forecast_high_res.iloc[:, 0].values,
-			line=dict(
-				color='black',
-			)
-		)
-
-		plot_series = [old_series,
-		               min_series,
-		               std_dev_lower_series,
-		               std_dev_upper_series,
-		               max_series,
-		               avg_series,
-		               hres_series]
-
-		layout = go.Layout(
-			title="Forecast<br><sub>{0} ({1}): {2}</sub>".format(
-				watershed, subbasin, comid),
-			xaxis=dict(
-				title='Date',
-			),
-			yaxis=dict(
-				title='Streamflow ({}<sup>3</sup>/s)'.format(get_units_title(units)),
-				range=[0, max(forecast_low_res.iloc[:, 4].values) + max(forecast_low_res.iloc[:, 4].values) / 5]
-			),
-			# shapes=return_shapes,
-			# annotations=return_annotations
-		)
-
-		chart_obj = PlotlyView(
-			go.Figure(data=plot_series,
-			          layout=layout)
-		)
+		chart_obj = PlotlyView(hydroviewer_figure)
 
 		context = {
 			'gizmo_object': chart_obj,
@@ -2470,8 +1246,7 @@ def get_time_series_bc(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -2506,256 +1281,18 @@ def get_time_series_bc(request):
 		# Removing Negative Values
 		forecast_df[forecast_df < 0] = 0
 
-		# Format dates
-		forecast_df.index = forecast_df.index.to_series().dt.strftime("%Y-%m-%d %H:%M:%S")
-		forecast_df.index = pd.to_datetime(forecast_df.index)
-
-		# Getting low resolution forecats
-		forecast_low_res = forecast_df.copy()
-		forecast_low_res.drop(['high_res (m^3/s)'], axis=1, inplace=True)
-		forecast_low_res = forecast_low_res.dropna()
-
-		# Getting high resolution forecats
-		forecast_high_res = forecast_df.copy()
-		forecast_high_res.drop(
-			['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)',
-			 'max (m^3/s)'], axis=1, inplace=True)
-		forecast_high_res = forecast_high_res.dropna()
-
 		# Getting forecast record
 		forecast_record = geoglows.streamflow.forecast_records(comid, return_format='csv')
-
-		# Creating individual dataframes
-		mean_forecast = forecast_low_res.copy()
-		mean_forecast.drop(['std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'],
-		                   axis=1, inplace=True)
-
-		max_forecast = forecast_low_res.copy()
-		max_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)'],
-		                  axis=1, inplace=True)
-
-		min_forecast = forecast_low_res.copy()
-		min_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'max (m^3/s)'],
-		                  axis=1, inplace=True)
-
-		std_dev_lower_forecast = forecast_low_res.copy()
-		std_dev_lower_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'],
-		                            axis=1, inplace=True)
-
-		std_dev_upper_forecast = forecast_low_res.copy()
-		std_dev_upper_forecast.drop(['mean (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'],
-		                            axis=1, inplace=True)
-
-		high_res_forecast = forecast_high_res.copy()
+		forecast_ensembles = geoglows.streamflow.forecast_ensembles(comid)
 
 		'''Correct Forecast'''
+		fixed_stats = geoglows.bias.correct_forecast_flows(forecast_df, simulated_df, observed_df)
+		fixed_records = geoglows.bias.correct_forecast_flows(forecast_record, simulated_df, observed_df, use_month=-1)
+		fixed_ensembles = geoglows.bias.correct_forecast_flows(forecast_ensembles, simulated_df, observed_df)
 
-		iniDate = mean_forecast.index[0]
-		monIdx = iniDate.month
+		hydroviewer_figure = geoglows.plots.hydroviewer_plot(fixed_records, fixed_stats, fixed_ensembles)
 
-		# filter historic data to only be current month
-		monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-		# filter the observations to current month
-		monObs = observed_df[observed_df.index.month.isin([monIdx])]
-		monObs = monObs.dropna()
-
-		# get maximum value to bound histogram
-		obs_tempMax = np.max(monObs.max())
-		sim_tempMax = np.max(monData.max())
-		obs_tempMin = np.min(monObs.min())
-		sim_tempMin = np.min(monData.min())
-
-		obs_maxVal = math.ceil(obs_tempMax)
-		sim_maxVal = math.ceil(sim_tempMax)
-		obs_minVal = math.floor(obs_tempMin)
-		sim_minVal = math.floor(sim_tempMin)
-
-		n_elementos_obs = len(monObs.iloc[:, 0].values)
-		n_elementos_sim = len(monData.iloc[:, 0].values)
-
-		n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-		n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-		# specify the bin width for histogram (in m3/s)
-		step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-		step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-		# specify histogram bins
-		bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-		bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-		if (bins_obs[0] == 0):
-			bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-		elif (bins_obs[0] > 0):
-			bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-		if (bins_sim[0] >= 0):
-			bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-		elif (bins_sim[0] > 0):
-			bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-		# get the histograms
-		sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-		obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-		# adjust the bins to be the center
-		bin_edges_sim = bin_edges_sim[1:]
-		bin_edges_obs = bin_edges_obs[1:]
-
-		# normalize the histograms
-		sim_counts = sim_counts.astype(float) / monData.size
-		obs_counts = obs_counts.astype(float) / monObs.size
-
-		# calculate the cdfs
-		simcdf = np.cumsum(sim_counts)
-		obscdf = np.cumsum(obs_counts)
-
-		# interpolated function to convert simulated streamflow to prob
-		f = interpolate.interp1d(bin_edges_sim, simcdf, fill_value="extrapolate")
-
-		# interpolated function to convert simulated prob to observed streamflow
-		backout = interpolate.interp1d(obscdf, bin_edges_obs, fill_value="extrapolate")
-
-		# Fixing previous forecast
-		fixed_old_dates = forecast_record.index.to_list()
-		fixed_old_values = backout(f(forecast_record.iloc[:, 0].to_list()))
-
-		# Fixing the forecast
-		fixed_dates = mean_forecast.index.to_list()
-		fixed_mean_values = backout(f(mean_forecast.iloc[:, 0].to_list()))
-		fixed_mean_values = fixed_mean_values.tolist()
-		fixed_max_values = backout(f(max_forecast.iloc[:, 0].to_list()))
-		fixed_max_values = fixed_max_values.tolist()
-		fixed_min_values = backout(f(min_forecast.iloc[:, 0].to_list()))
-		fixed_min_values = fixed_min_values.tolist()
-		fixed_std_dev_lower_values = backout(f(std_dev_lower_forecast.iloc[:, 0].to_list()))
-		fixed_std_dev_lower_values = fixed_std_dev_lower_values.tolist()
-		fixed_std_dev_upper_values = backout(f(std_dev_upper_forecast.iloc[:, 0].to_list()))
-		fixed_std_dev_upper_values = fixed_std_dev_upper_values.tolist()
-
-		# Fixing the high-res forecast
-		fixed_dates_high_res = high_res_forecast.index.to_list()
-		fixed_high_res_values = backout(f(high_res_forecast.iloc[:, 0].to_list()))
-		fixed_high_res_values = fixed_high_res_values.tolist()
-
-		# Removing Negative Values
-		fixed_mean_values2 = [0 if i < 0 else i for i in fixed_mean_values]
-		fixed_mean_values = fixed_mean_values2
-		fixed_high_res_values2 = [0 if i < 0 else i for i in fixed_high_res_values]
-		fixed_high_res_values = fixed_high_res_values2
-		fixed_min_values2 = [0 if i < 0 else i for i in fixed_min_values]
-		fixed_min_values = fixed_min_values2
-		fixed_max_values2 = [0 if i < 0 else i for i in fixed_max_values]
-		fixed_max_values = fixed_max_values2
-		fixed_std_dev_lower_values2 = [0 if i < 0 else i for i in fixed_std_dev_lower_values]
-		fixed_std_dev_lower_values = fixed_std_dev_lower_values2
-		fixed_std_dev_upper_values2 = [0 if i < 0 else i for i in fixed_std_dev_upper_values]
-		fixed_std_dev_upper_values = fixed_std_dev_upper_values2
-
-		# ----------------------------------------------
-		# Chart Section
-		# ----------------------------------------------
-
-		old_series = go.Scatter(
-			name='Forecast Record',
-			x=fixed_old_dates,
-			y=fixed_old_values,
-			line=dict(
-				color='red',
-			)
-		)
-
-		avg_series = go.Scatter(
-			name='Mean',
-			x=fixed_dates,
-			y=fixed_mean_values,
-			line=dict(
-				color='blue',
-			)
-		)
-
-		max_series = go.Scatter(
-			name='Max',
-			x=fixed_dates,
-			y=fixed_max_values,
-			fill='tonexty',
-			mode='lines',
-			line=dict(
-				color='rgb(152, 251, 152)',
-				width=0,
-			)
-		)
-
-		min_series = go.Scatter(
-			name='Min',
-			x=fixed_dates,
-			y=fixed_min_values,
-			fill=None,
-			mode='lines',
-			line=dict(
-				color='rgb(152, 251, 152)',
-			)
-		)
-
-		std_dev_lower_series = go.Scatter(
-			name='Std. Dev. Lower',
-			x=fixed_dates,
-			y=fixed_std_dev_lower_values,
-			fill='tonexty',
-			mode='lines',
-			line=dict(
-				color='rgb(152, 251, 152)',
-				width=0,
-			)
-		)
-
-		std_dev_upper_series = go.Scatter(
-			name='Std. Dev. Upper',
-			x=fixed_dates,
-			y=fixed_std_dev_upper_values,
-			fill='tonexty',
-			mode='lines',
-			line=dict(
-				width=0,
-				color='rgb(34, 139, 34)',
-			)
-		)
-
-		hres_series = go.Scatter(
-			name='HRES',
-			x=fixed_dates_high_res,
-			y=fixed_high_res_values,
-			line=dict(
-				color='black',
-			)
-		)
-
-		plot_series = [old_series,
-		               min_series,
-		               std_dev_lower_series,
-		               std_dev_upper_series,
-		               max_series,
-		               avg_series,
-		               hres_series]
-
-		layout = go.Layout(
-			title="Forecast<br><sub>{0} ({1}): {2}</sub>".format(
-				watershed, subbasin, comid),
-			xaxis=dict(
-				title='Date',
-			),
-			yaxis=dict(
-				title='Streamflow ({}<sup>3</sup>/s)'.format(get_units_title(units)),
-				range=[0, max(fixed_max_values) + max(fixed_max_values) / 5]
-			),
-			#shapes=return_shapes,
-			#annotations=return_annotations
-		)
-
-		chart_obj = PlotlyView(
-			go.Figure(data=plot_series,
-			          layout=layout)
-		)
+		chart_obj = PlotlyView(hydroviewer_figure)
 
 		context = {
 			'gizmo_object': chart_obj,
@@ -2840,7 +1377,7 @@ def get_simulated_discharge_csv(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index, columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		pairs = [list(a) for a in zip(simulated_df.index, simulated_df.iloc[:, 0].values)]
 
@@ -2884,8 +1421,7 @@ def get_simulated_bc_discharge_csv(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -2915,101 +1451,7 @@ def get_simulated_bc_discharge_csv(request):
 
 		'''Correct the Bias in Sumulation'''
 
-		years = ['1979', '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', '1990', '1991',
-		         '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004',
-		         '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
-		         '2018']
-
-		months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
-
-		dates = []
-		values = []
-
-		for year in years:
-			data_year = simulated_df[simulated_df.index.year == int(year)]
-
-			for month in months:
-				data_month = data_year[data_year.index.month == int(month)]
-
-				# select a specific month for bias correction example
-				# in this case we will use current month from forecast
-				iniDate = data_month.index[0]
-				monIdx = iniDate.month
-
-				# filter historic data to only be current month
-				monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-				# filter the observations to current month
-				monObs = observed_df[observed_df.index.month.isin([monIdx])]
-				monObs = monObs.dropna()
-
-				# get maximum value to bound histogram
-				obs_tempMax = np.max(monObs.max())
-				sim_tempMax = np.max(monData.max())
-				obs_tempMin = np.min(monObs.min())
-				sim_tempMin = np.min(monData.min())
-
-				obs_maxVal = math.ceil(obs_tempMax)
-				sim_maxVal = math.ceil(sim_tempMax)
-				obs_minVal = math.floor(obs_tempMin)
-				sim_minVal = math.floor(sim_tempMin)
-
-				n_elementos_obs = len(monObs.iloc[:, 0].values)
-				n_elementos_sim = len(monData.iloc[:, 0].values)
-
-				n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-				n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-				# specify the bin width for histogram (in m3/s)
-				step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-				step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-				# specify histogram bins
-				bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-				bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-				if (bins_obs[0] == 0):
-					bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-				elif (bins_obs[0] > 0):
-					bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-				if (bins_sim[0] >= 0):
-					bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-				elif (bins_sim[0] > 0):
-					bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-				# get the histograms
-				sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-				obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-				# adjust the bins to be the center
-				bin_edges_sim = bin_edges_sim[1:]
-				bin_edges_obs = bin_edges_obs[1:]
-
-				# normalize the histograms
-				sim_counts = sim_counts.astype(float) / monData.size
-				obs_counts = obs_counts.astype(float) / monObs.size
-
-				# calculate the cdfs
-				simcdf = np.cumsum(sim_counts)
-				obscdf = np.cumsum(obs_counts)
-
-				# interpolated function to convert simulated streamflow to prob
-				f = interpolate.interp1d(bin_edges_sim, simcdf)
-
-				# interpolated function to convert simulated prob to observed streamflow
-				backout = interpolate.interp1d(obscdf, bin_edges_obs)
-
-				date = data_month.index.to_list()
-				value = backout(f(data_month.iloc[:, 0].to_list()))
-				value = value.tolist()
-
-				dates.append(date)
-				values.append(value)
-
-		dates = reduce(lambda x, y: x + y, dates)
-		values = reduce(lambda x, y: x + y, values)
-
-		corrected_df = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
+		corrected_df = geoglows.bias.correct_historical_simulation(simulated_df, observed_df)
 
 		'''Merge Data'''
 
@@ -3019,16 +1461,10 @@ def get_simulated_bc_discharge_csv(request):
 
 		'''Plotting Data'''
 
-		pairs = [list(a) for a in zip(dates, values)]
-
 		response = HttpResponse(content_type='text/csv')
 		response['Content-Disposition'] = 'attachment; filename=corrected_simulated_discharge_{0}.csv'.format(codEstacion)
 
-		writer = csv_writer(response)
-		writer.writerow(['datetime', 'flow (m3/s)'])
-
-		for row_data in pairs:
-			writer.writerow(row_data)
+		corrected_df.to_csv(encoding='utf-8', header=True, path_or_buf=response)
 
 		return response
 
@@ -3051,50 +1487,16 @@ def get_forecast_data_csv(request):
 		comid = get_data['streamcomid']
 
 		'''Get Forecasts'''
-
 		forecast_df = geoglows.streamflow.forecast_stats(comid, return_format='csv')
 
 		# Removing Negative Values
 		forecast_df[forecast_df < 0] = 0
 
-		# Format dates
-		forecast_df.index = forecast_df.index.to_series().dt.strftime("%Y-%m-%d %H:%M:%S")
-		forecast_df.index = pd.to_datetime(forecast_df.index)
-
-		# Getting low resolution forecats
-		forecast_low_res = forecast_df.copy()
-		forecast_low_res.drop(['high_res (m^3/s)'], axis=1, inplace=True)
-		forecast_low_res = forecast_low_res.dropna()
-
-		# Getting high resolution forecats
-		forecast_high_res = forecast_df.copy()
-		forecast_high_res.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-		forecast_high_res = forecast_high_res.dropna()
-
-		# Creating individual dataframes
-		mean_forecast = forecast_low_res.copy()
-		mean_forecast.drop(['std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-
-		max_forecast = forecast_low_res.copy()
-		max_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)'], axis=1, inplace=True)
-
-		min_forecast = forecast_low_res.copy()
-		min_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-
-		std_dev_lower_forecast = forecast_low_res.copy()
-		std_dev_lower_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-
-		std_dev_upper_forecast = forecast_low_res.copy()
-		std_dev_upper_forecast.drop(['mean (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-
-		high_res_forecast = forecast_high_res.copy()
-
-		forecast_df2 = pd.concat([mean_forecast, max_forecast, min_forecast, std_dev_lower_forecast, std_dev_upper_forecast, high_res_forecast], axis=1)
-
 		# Writing CSV
 		response = HttpResponse(content_type='text/csv')
 		response['Content-Disposition'] = 'attachment; filename=streamflow_forecast_{0}_{1}_{2}.csv'.format(watershed, subbasin, comid)
-		forecast_df2.to_csv(encoding='utf-8', header=True, path_or_buf=response)
+
+		forecast_df.to_csv(encoding='utf-8', header=True, path_or_buf=response)
 
 		return response
 
@@ -3129,8 +1531,7 @@ def get_forecast_bc_data_csv(request):
 
 		simulated_df.index = pd.to_datetime(simulated_df.index)
 
-		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 1].values, index=simulated_df.index,
-		                            columns=['Simulated Streamflow'])
+		simulated_df = pd.DataFrame(data=simulated_df.iloc[:, 0].values, index=simulated_df.index, columns=['Simulated Streamflow'])
 
 		'''Get Observed Data'''
 
@@ -3159,179 +1560,18 @@ def get_forecast_bc_data_csv(request):
 		observed_df = pd.DataFrame(data=dataDischarge, index=datesDischarge, columns=['Observed Streamflow'])
 
 		'''Get Forecasts'''
-
-		forecast_df = geoglows.streamflow.forecast_stats(comid, return_format = 'csv')
+		forecast_df = geoglows.streamflow.forecast_stats(comid, return_format='csv')
 
 		# Removing Negative Values
 		forecast_df[forecast_df < 0] = 0
 
-		#Format dates
-		forecast_df.index = forecast_df.index.to_series().dt.strftime("%Y-%m-%d %H:%M:%S")
-		forecast_df.index = pd.to_datetime(forecast_df.index)
-
-		#Getting low resolution forecats
-		forecast_low_res = forecast_df.copy()
-		forecast_low_res.drop(['high_res (m^3/s)'], axis=1, inplace=True)
-		forecast_low_res = forecast_low_res.dropna()
-
-		# Getting high resolution forecats
-		forecast_high_res = forecast_df.copy()
-		forecast_high_res.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-		forecast_high_res = forecast_high_res.dropna()
-
-		#Creating individual dataframes
-		mean_forecast = forecast_low_res.copy()
-		mean_forecast.drop(['std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-
-		max_forecast = forecast_low_res.copy()
-		max_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)'], axis=1, inplace=True)
-
-		min_forecast = forecast_low_res.copy()
-		min_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'std_dev_range_lower (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-
-		std_dev_lower_forecast = forecast_low_res.copy()
-		std_dev_lower_forecast.drop(['mean (m^3/s)', 'std_dev_range_upper (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-
-		std_dev_upper_forecast = forecast_low_res.copy()
-		std_dev_upper_forecast.drop(['mean (m^3/s)', 'std_dev_range_lower (m^3/s)', 'min (m^3/s)', 'max (m^3/s)'], axis=1, inplace=True)
-
-		high_res_forecast = forecast_high_res.copy()
-
 		'''Correct Forecast'''
-
-		iniDate = mean_forecast.index[0]
-		monIdx = iniDate.month
-
-		# filter historic data to only be current month
-		monData = simulated_df[simulated_df.index.month.isin([monIdx])]
-		# filter the observations to current month
-		monObs = observed_df[observed_df.index.month.isin([monIdx])]
-		monObs = monObs.dropna()
-
-		# get maximum value to bound histogram
-		obs_tempMax = np.max(monObs.max())
-		sim_tempMax = np.max(monData.max())
-		obs_tempMin = np.min(monObs.min())
-		sim_tempMin = np.min(monData.min())
-
-		obs_maxVal = math.ceil(obs_tempMax)
-		sim_maxVal = math.ceil(sim_tempMax)
-		obs_minVal = math.floor(obs_tempMin)
-		sim_minVal = math.floor(sim_tempMin)
-
-		n_elementos_obs = len(monObs.iloc[:, 0].values)
-		n_elementos_sim = len(monData.iloc[:, 0].values)
-
-		n_marcas_clase_obs = math.ceil(1 + (3.322 * math.log10(n_elementos_obs)))
-		n_marcas_clase_sim = math.ceil(1 + (3.322 * math.log10(n_elementos_sim)))
-
-		# specify the bin width for histogram (in m3/s)
-		step_obs = (obs_maxVal - obs_minVal) / n_marcas_clase_obs
-		step_sim = (sim_maxVal - sim_minVal) / n_marcas_clase_sim
-
-		# specify histogram bins
-		bins_obs = np.arange(-np.min(step_obs), obs_maxVal + 2 * np.min(step_obs), np.min(step_obs))
-		bins_sim = np.arange(-np.min(step_sim), sim_maxVal + 2 * np.min(step_sim), np.min(step_sim))
-
-		if (bins_obs[0] == 0):
-			bins_obs = np.concatenate((-bins_obs[1], bins_obs))
-		elif (bins_obs[0] > 0):
-			bins_obs = np.concatenate((-bins_obs[0], bins_obs))
-
-		if (bins_sim[0] >= 0):
-			bins_sim = np.concatenate((-bins_sim[1], bins_sim))
-		elif (bins_sim[0] > 0):
-			bins_sim = np.concatenate((-bins_sim[0], bins_sim))
-
-		# get the histograms
-		sim_counts, bin_edges_sim = np.histogram(monData, bins=bins_sim)
-		obs_counts, bin_edges_obs = np.histogram(monObs, bins=bins_obs)
-
-		# adjust the bins to be the center
-		bin_edges_sim = bin_edges_sim[1:]
-		bin_edges_obs = bin_edges_obs[1:]
-
-		# normalize the histograms
-		sim_counts = sim_counts.astype(float) / monData.size
-		obs_counts = obs_counts.astype(float) / monObs.size
-
-		# calculate the cdfs
-		simcdf = np.cumsum(sim_counts)
-		obscdf = np.cumsum(obs_counts)
-
-		# interpolated function to convert simulated streamflow to prob
-		f = interpolate.interp1d(bin_edges_sim, simcdf, fill_value="extrapolate")
-
-		# interpolated function to convert simulated prob to observed streamflow
-		backout = interpolate.interp1d(obscdf, bin_edges_obs, fill_value="extrapolate")
-
-		# Fixing the forecast
-		fixed_dates = mean_forecast.index.to_list()
-		fixed_mean_values = backout(f(mean_forecast.iloc[:, 0].to_list()))
-		fixed_mean_values = fixed_mean_values.tolist()
-		fixed_max_values = backout(f(max_forecast.iloc[:, 0].to_list()))
-		fixed_max_values = fixed_max_values.tolist()
-		fixed_min_values = backout(f(min_forecast.iloc[:, 0].to_list()))
-		fixed_min_values = fixed_min_values.tolist()
-		fixed_std_dev_lower_values = backout(f(std_dev_lower_forecast.iloc[:, 0].to_list()))
-		fixed_std_dev_lower_values = fixed_std_dev_lower_values.tolist()
-		fixed_std_dev_upper_values = backout(f(std_dev_upper_forecast.iloc[:, 0].to_list()))
-		fixed_std_dev_upper_values = fixed_std_dev_upper_values.tolist()
-
-		# Fixing the high-res forecast
-		fixed_dates_high_res = high_res_forecast.index.to_list()
-		fixed_high_res_values = backout(f(high_res_forecast.iloc[:, 0].to_list()))
-		fixed_high_res_values = fixed_high_res_values.tolist()
-
-		# Removing Negative Values
-		fixed_mean_values2 = [0 if i < 0 else i for i in fixed_mean_values]
-		fixed_mean_values = fixed_mean_values2
-		fixed_high_res_values2 = [0 if i < 0 else i for i in fixed_high_res_values]
-		fixed_high_res_values = fixed_high_res_values2
-		fixed_min_values2 = [0 if i < 0 else i for i in fixed_min_values]
-		fixed_min_values = fixed_min_values2
-		fixed_max_values2 = [0 if i < 0 else i for i in fixed_max_values]
-		fixed_max_values = fixed_max_values2
-		fixed_std_dev_lower_values2 = [0 if i < 0 else i for i in fixed_std_dev_lower_values]
-		fixed_std_dev_lower_values = fixed_std_dev_lower_values2
-		fixed_std_dev_upper_values2 = [0 if i < 0 else i for i in fixed_std_dev_upper_values]
-		fixed_std_dev_upper_values = fixed_std_dev_upper_values2
-
-		pairs = [list(a) for a in zip(fixed_dates, fixed_mean_values)]
-		mean_forecast = pd.DataFrame(pairs, columns=['Datetime', 'mean (m3/s)'])
-		mean_forecast.set_index('Datetime', inplace=True)
-
-		pairs = [list(a) for a in zip(fixed_dates, fixed_max_values)]
-		max_forecast = pd.DataFrame(pairs, columns=['Datetime', 'max (m3/s)'])
-		max_forecast.set_index('Datetime', inplace=True)
-
-		pairs = [list(a) for a in zip(fixed_dates, fixed_min_values)]
-		min_forecast = pd.DataFrame(pairs, columns=['Datetime', 'min (m3/s)'])
-		min_forecast.set_index('Datetime', inplace=True)
-
-		pairs = [list(a) for a in zip(fixed_dates, fixed_std_dev_lower_values)]
-		std_dev_lower_forecast = pd.DataFrame(pairs, columns=['Datetime', 'std_dev_range_lower (m3/s)'])
-		std_dev_lower_forecast.set_index('Datetime', inplace=True)
-
-		pairs = [list(a) for a in zip(fixed_dates, fixed_std_dev_upper_values)]
-		std_dev_upper_forecast = pd.DataFrame(pairs, columns=['Datetime', 'std_dev_range_upper (m3/s)'])
-		std_dev_upper_forecast.set_index('Datetime', inplace=True)
-
-		pairs = [list(a) for a in zip(fixed_dates_high_res, fixed_high_res_values)]
-		high_res_forecast = pd.DataFrame(pairs, columns=['Datetime', 'high_res (m3/s)'])
-		high_res_forecast.set_index('Datetime', inplace=True)
-
-		init_time = mean_forecast.index[0]
-
-		corrected_forecast_df = pd.concat(
-			[mean_forecast, max_forecast, mean_forecast, min_forecast, std_dev_lower_forecast, std_dev_upper_forecast,
-			 high_res_forecast], axis=1)
+		fixed_stats = geoglows.bias.correct_forecast_flows(forecast_df, simulated_df, observed_df)
 
 		response = HttpResponse(content_type='text/csv')
-		response[
-			'Content-Disposition'] = 'attachment; filename=corrected_streamflow_forecast_{0}_{1}_{2}_{3}.csv'.format(
-			watershed, subbasin, comid, init_time)
-		corrected_forecast_df.to_csv(encoding='utf-8', header=True, path_or_buf=response)
+		response['Content-Disposition'] = 'attachment; filename=corrected_streamflow_forecast_{0}_{1}_{2}.csv'.format(watershed, subbasin, comid)
+
+		fixed_stats.to_csv(encoding='utf-8', header=True, path_or_buf=response)
 
 		return response
 

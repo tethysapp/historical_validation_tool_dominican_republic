@@ -5,6 +5,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/app.py" afterPath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/app.py" />
       <change beforePath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/controllers.py" afterPath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/controllers.py" />
+      <change beforePath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/css/main.css" afterPath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/css/main.css" />
       <change beforePath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/js/home.js" afterPath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/js/home.js" />
       <change beforePath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/home.html" afterPath="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/home.html" />
     </list>
@@ -20,18 +21,18 @@
       <file leaf-file-name="app.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/app.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="87">
-              <caret line="90" column="14" lean-forward="false" selection-start-line="90" selection-start-column="14" selection-end-line="90" selection-end-column="14" />
+            <state relative-caret-position="1275">
+              <caret line="85" column="14" lean-forward="false" selection-start-line="85" selection-start-column="14" selection-end-line="85" selection-end-column="14" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="controllers.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="controllers.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/controllers.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="367">
-              <caret line="2842" column="99" lean-forward="false" selection-start-line="2842" selection-start-column="99" selection-end-line="2842" selection-end-column="99" />
+            <state relative-caret-position="493">
+              <caret line="1570" column="41" lean-forward="true" selection-start-line="1570" selection-start-column="41" selection-end-line="1570" selection-end-column="41" />
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
               </folding>
@@ -39,25 +40,32 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="base.html" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/base.html">
+      <file leaf-file-name="main.css" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/css/main.css">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="600">
-              <caret line="40" column="111" lean-forward="false" selection-start-line="39" selection-start-column="2" selection-end-line="40" selection-end-column="111" />
+            <state relative-caret-position="1305">
+              <caret line="87" column="1" lean-forward="false" selection-start-line="87" selection-start-column="1" selection-end-line="87" selection-end-column="1" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="home.html" pinned="false" current-in-tab="false">
+      <file leaf-file-name="base.html" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/base.html">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="525">
+              <caret line="35" column="19" lean-forward="true" selection-start-line="35" selection-start-column="19" selection-end-line="35" selection-end-column="19" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="home.html" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/home.html">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="194">
-              <caret line="299" column="101" lean-forward="false" selection-start-line="299" selection-start-column="101" selection-end-line="299" selection-end-column="101" />
-              <folding>
-                <element signature="n#div#9;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-                <element signature="n#div#10;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-              </folding>
+            <state relative-caret-position="-2433">
+              <caret line="56" column="42" lean-forward="false" selection-start-line="56" selection-start-column="42" selection-end-line="56" selection-end-column="42" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -65,8 +73,8 @@
       <file leaf-file-name="home.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/js/home.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="168">
-              <caret line="1139" column="87" lean-forward="false" selection-start-line="1139" selection-start-column="9" selection-end-line="1139" selection-end-column="87" />
+            <state relative-caret-position="15060">
+              <caret line="1004" column="0" lean-forward="true" selection-start-line="1004" selection-start-column="0" selection-end-line="1004" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -89,7 +97,6 @@
       <find>monObs = observed_df[observed_df.index.month.isin([monIdx])]</find>
       <find>_bc</find>
       <find>.index</find>
-      <find>'''Get Simulated Data'''</find>
       <find>get_available_dates</find>
       <find>start</find>
       <find>years</find>
@@ -97,6 +104,11 @@
       <find>startdate</find>
       <find>get_time_series_bc(watershed, subbasin, streamcomid, stationcode, stationname)</find>
       <find>fixed_max_values</find>
+      <find>hydrographs</find>
+      <find>make</find>
+      <find>download_observed_discharge</find>
+      <find>'''Get Simulated Data'''</find>
+      <find>'''Correct the Bias in Sumulation'''</find>
     </findStrings>
     <replaceStrings>
       <replace>requests.get(url, verify=False)</replace>
@@ -110,19 +122,19 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/setup.py" />
-        <option value="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/css/main.css" />
         <option value="$PROJECT_DIR$/setup3.py" />
         <option value="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/base.html" />
         <option value="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/app.py" />
-        <option value="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/js/home.js" />
+        <option value="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/css/main.css" />
         <option value="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/home.html" />
+        <option value="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/js/home.js" />
         <option value="$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/controllers.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="88" />
-    <option name="y" value="327" />
+  <component name="ProjectFrameBounds" extendedState="1">
+    <option name="x" value="446" />
+    <option name="y" value="144" />
     <option name="width" value="1234" />
     <option name="height" value="697" />
   </component>
@@ -141,6 +153,8 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -165,6 +179,14 @@
               <item name="tethysapp" type="462c0819:PsiDirectoryNode" />
               <item name="historical_validation_tool_dominican_republic" type="462c0819:PsiDirectoryNode" />
               <item name="public" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="historical_validation_tool_dominican_republic" type="b2602c69:ProjectViewProjectNode" />
+              <item name="historical_validation_tool_dominican_republic" type="462c0819:PsiDirectoryNode" />
+              <item name="tethysapp" type="462c0819:PsiDirectoryNode" />
+              <item name="historical_validation_tool_dominican_republic" type="462c0819:PsiDirectoryNode" />
+              <item name="public" type="462c0819:PsiDirectoryNode" />
+              <item name="css" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="historical_validation_tool_dominican_republic" type="b2602c69:ProjectViewProjectNode" />
@@ -200,8 +222,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
-      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -244,10 +264,10 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="88" y="327" width="1234" height="697" extended-state="0" />
+    <frame x="446" y="144" width="1234" height="697" extended-state="1" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.36073825" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.29614094" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="R Packages" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="R Graphics" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -280,10 +300,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2790">
           <caret line="342" column="22" lean-forward="false" selection-start-line="342" selection-start-column="22" selection-end-line="342" selection-end-column="22" />
-          <folding>
-            <element signature="n#div#9;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-            <element signature="n#div#10;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -327,10 +344,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2790">
           <caret line="342" column="22" lean-forward="false" selection-start-line="342" selection-start-column="22" selection-end-line="342" selection-end-column="22" />
-          <folding>
-            <element signature="n#div#9;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-            <element signature="n#div#10;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -370,10 +384,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2790">
           <caret line="342" column="22" lean-forward="false" selection-start-line="342" selection-start-column="22" selection-end-line="342" selection-end-column="22" />
-          <folding>
-            <element signature="n#div#9;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-            <element signature="n#div#10;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -417,10 +428,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2790">
           <caret line="342" column="22" lean-forward="false" selection-start-line="342" selection-start-column="22" selection-end-line="342" selection-end-column="22" />
-          <folding>
-            <element signature="n#div#9;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-            <element signature="n#div#10;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -452,10 +460,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2790">
           <caret line="342" column="22" lean-forward="false" selection-start-line="342" selection-start-column="22" selection-end-line="342" selection-end-column="22" />
-          <folding>
-            <element signature="n#div#9;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-            <element signature="n#div#10;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -499,10 +504,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2790">
           <caret line="342" column="22" lean-forward="true" selection-start-line="342" selection-start-column="22" selection-end-line="342" selection-end-column="22" />
-          <folding>
-            <element signature="n#div#9;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-            <element signature="n#div#10;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -645,13 +647,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/css/main.css">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="162">
-          <caret line="95" column="4" lean-forward="false" selection-start-line="95" selection-start-column="4" selection-end-line="95" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/setup2.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="45">
@@ -666,48 +661,53 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/base.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="600">
-          <caret line="40" column="111" lean-forward="false" selection-start-line="39" selection-start-column="2" selection-end-line="40" selection-end-column="111" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/app.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="87">
-          <caret line="90" column="14" lean-forward="false" selection-start-line="90" selection-start-column="14" selection-end-line="90" selection-end-column="14" />
+        <state relative-caret-position="1275">
+          <caret line="85" column="14" lean-forward="false" selection-start-line="85" selection-start-column="14" selection-end-line="85" selection-end-column="14" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/home.html">
+    <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/css/main.css">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="194">
-          <caret line="299" column="101" lean-forward="false" selection-start-line="299" selection-start-column="101" selection-end-line="299" selection-end-column="101" />
-          <folding>
-            <element signature="n#div#9;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-            <element signature="n#div#10;n#div#0;n#div#1;n#div#0;n#div#0;n#div#3;n#!!top" expanded="false" />
-          </folding>
+        <state relative-caret-position="1305">
+          <caret line="87" column="1" lean-forward="false" selection-start-line="87" selection-start-column="1" selection-end-line="87" selection-end-column="1" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/base.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="525">
+          <caret line="35" column="19" lean-forward="true" selection-start-line="35" selection-start-column="19" selection-end-line="35" selection-end-column="19" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/public/js/home.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="168">
-          <caret line="1139" column="87" lean-forward="false" selection-start-line="1139" selection-start-column="9" selection-end-line="1139" selection-end-column="87" />
+        <state relative-caret-position="15060">
+          <caret line="1004" column="0" lean-forward="true" selection-start-line="1004" selection-start-column="0" selection-end-line="1004" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/controllers.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="367">
-          <caret line="2842" column="99" lean-forward="false" selection-start-line="2842" selection-start-column="99" selection-end-line="2842" selection-end-column="99" />
+        <state relative-caret-position="493">
+          <caret line="1570" column="41" lean-forward="true" selection-start-line="1570" selection-start-column="41" selection-end-line="1570" selection-end-column="41" />
           <folding>
             <element signature="e#0#35#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tethysapp/historical_validation_tool_dominican_republic/templates/historical_validation_tool_dominican_republic/home.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2433">
+          <caret line="56" column="42" lean-forward="false" selection-start-line="56" selection-start-column="42" selection-end-line="56" selection-end-column="42" />
+          <folding />
         </state>
       </provider>
     </entry>
