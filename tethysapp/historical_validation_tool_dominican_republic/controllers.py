@@ -1162,40 +1162,6 @@ def get_units_title(unit_type):
     return units_title
 
 
-def get_available_dates(request):
-    get_data = request.GET
-
-    watershed = get_data['watershed']
-    subbasin = get_data['subbasin']
-    comid = get_data['streamcomid']
-
-    # request_params
-    request_params = dict(watershed_name=watershed, subbasin_name=subbasin, reach_id=comid)
-
-    # Token is for the demo account
-    request_headers = dict(Authorization='Token 1adf07d983552705cd86ac681f3717510b6937f6')
-
-    res = requests.get('https://tethys2.byu.edu/apps/streamflow-prediction-tool/api/GetAvailableDates/',
-                       params=request_params, headers=request_headers)
-
-    dates = []
-    for date in eval(res.content):
-        if len(date) == 10:
-            date_mod = date + '000'
-            date_f = dt.datetime.strptime(date_mod, '%Y%m%d.%H%M').strftime('%Y-%m-%d %H:%M')
-        else:
-            date_f = dt.datetime.strptime(date, '%Y%m%d.%H%M').strftime('%Y-%m-%d %H:%M')
-        dates.append([date_f, date, watershed, subbasin, comid])
-
-    dates.append(['Select Date', dates[-1][1]])
-    dates.reverse()
-
-    return JsonResponse({
-        "success": "Data analysis complete!",
-        "available_dates": json.dumps(dates)
-    })
-
-
 def get_time_series(request):
     get_data = request.GET
     try:
@@ -1207,9 +1173,10 @@ def get_time_series(request):
         # Removing Negative Values
         forecast_df[forecast_df < 0] = 0
         # Getting forecast record
-        forecast_record = geoglows.streamflow.forecast_records(comid, return_format='csv')
-        forecast_ensembles = geoglows.streamflow.forecast_ensembles(comid)
-        hydroviewer_figure = geoglows.plots.hydroviewer(forecast_record, forecast_df, forecast_ensembles)
+        #forecast_record = geoglows.streamflow.forecast_records(comid, return_format='csv')
+        #forecast_ensembles = geoglows.streamflow.forecast_ensembles(comid)
+        #hydroviewer_figure = geoglows.plots.hydroviewer(forecast_record, forecast_df, forecast_ensembles)
+        hydroviewer_figure = geoglows.plots.forecast_stats(stats=forecast_df, titles={'Reach ID': comid})
 
         chart_obj = PlotlyView(hydroviewer_figure)
 
@@ -1283,15 +1250,16 @@ def get_time_series_bc(request):
         forecast_df[forecast_df < 0] = 0
 
         # Getting forecast record
-        forecast_record = geoglows.streamflow.forecast_records(comid, return_format='csv')
-        forecast_ensembles = geoglows.streamflow.forecast_ensembles(comid)
+        #forecast_record = geoglows.streamflow.forecast_records(comid, return_format='csv')
+        #forecast_ensembles = geoglows.streamflow.forecast_ensembles(comid)
 
         '''Correct Forecast'''
         fixed_stats = geoglows.bias.correct_forecast(forecast_df, simulated_df, observed_df)
-        fixed_records = geoglows.bias.correct_forecast(forecast_record, simulated_df, observed_df, use_month=-1)
-        fixed_ensembles = geoglows.bias.correct_forecast(forecast_ensembles, simulated_df, observed_df)
+        #fixed_records = geoglows.bias.correct_forecast(forecast_record, simulated_df, observed_df, use_month=-1)
+        #fixed_ensembles = geoglows.bias.correct_forecast(forecast_ensembles, simulated_df, observed_df)
 
-        hydroviewer_figure = geoglows.plots.hydroviewer(fixed_records, fixed_stats, fixed_ensembles)
+        #hydroviewer_figure = geoglows.plots.hydroviewer(fixed_records, fixed_stats, fixed_ensembles)
+        hydroviewer_figure = geoglows.plots.forecast_stats(stats=fixed_stats, titles={'Station': nomEstacion + '-' + str(codEstacion), 'Reach ID': comid})
 
         chart_obj = PlotlyView(hydroviewer_figure)
 
