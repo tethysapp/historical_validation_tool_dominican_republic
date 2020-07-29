@@ -13,7 +13,7 @@ class HistoricalValidationToolDominicanRepublic(TethysAppBase):
     root_url = 'historical-validation-tool-dominican-republic'
     color = '#002255'
     description = 'Place a brief description of your app here.'
-    tags = ''
+    tags = 'This app evaluates the accuracy for the historical streamflow values obtained from Streamflow Prediction Tool in Dominican Republic.'
     enable_feedback = False
     feedback_emails = []
 
